@@ -62,58 +62,56 @@
 ✅[Load sheet info] Rsync 1.Data/Info/results_parsing.csv complete!
 Loaded 4 skip_flowcells
 =====================================================
-Processing specified flowcell: 241118_VH00195_177_AAAJYJNHV
-🕒[Load data] Start to load/preprocessing flowcell 241118_VH00195_177_AAAJYJNHV
-✅[Load FASTQ] Rsync 1.Data/FASTQ/241118_VH00195_177_AAAJYJNHV complete!
-✅[Load FASTQ] Rsync 1.Data/FASTQ/241118_VH00195_177_AAAJYJNHV/2024_11_18_10X_SC_RNA_Pool0088.csv complete!
-✅[Create sheet] Flowcell info sheet generated: 1.Data/RunSheet/241118_VH00195_177_AAAJYJNHV-run_sheet.csv
+Processing specified flowcell: FLOWCELL
+🕒[Load data] Start to load/preprocessing flowcell FLOWCELL
+✅[Load FASTQ] Rsync 1.Data/FASTQ/FLOWCELL complete!
+✅[Load FASTQ] Rsync 1.Data/FASTQ/FLOWCELL/SAMPLESHEET.csv complete!
+✅[Create sheet] Flowcell info sheet generated: 1.Data/RunSheet/FLOWCELL-run_sheet.csv
 ✅[Create sheet] Info sheet content:
 +----+--------------+------------------------------+-------------+-------------+------------+
 |    |    Sample_ID | Flowcell                     | Reference   | SEQtype     | Tissue     |
 |----+--------------+------------------------------+-------------+-------------+------------|
-|  0 | 962210414501 | 241118_VH00195_177_AAAJYJNHV | MM10        | SC_TENX_RNA | PBMC;cells |
-|  1 | 962210514501 | 241118_VH00195_177_AAAJYJNHV | MM10        | SC_TENX_RNA | PBMC;cells |
-|  2 | 962210714501 | 241118_VH00195_177_AAAJYJNHV | MM10        | SC_TENX_RNA | PBMC;cells |
-|  3 | 962210814501 | 241118_VH00195_177_AAAJYJNHV | MM10        | SC_TENX_RNA | PBMC;cells |
-|  4 | 962211314501 | 241118_VH00195_177_AAAJYJNHV | MM10        | SC_TENX_RNA | PBMC;cells |
-|  5 | 962211514501 | 241118_VH00195_177_AAAJYJNHV | MM10        | SC_TENX_RNA | PBMC;cells |
+|  0 | SAMPLE | FLOWCELL | MM10        | SC_TENX_RNA | PBMC;cells |
+|  1 | SAMPLE | FLOWCELL | MM10        | SC_TENX_RNA | PBMC;cells |
+|  2 | SAMPLE | FLOWCELL | MM10        | SC_TENX_RNA | PBMC;cells |
+|  3 | SAMPLE | FLOWCELL | MM10        | SC_TENX_RNA | PBMC;cells |
+|  4 | SAMPLE | FLOWCELL | MM10        | SC_TENX_RNA | PBMC;cells |
+|  5 | SAMPLE | FLOWCELL | MM10        | SC_TENX_RNA | PBMC;cells |
 +----+--------------+------------------------------+-------------+-------------+------------+
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
 │              Flowcell processing info                                                          │
 ├────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ℹ️ Start to processed flowcells_:   ['241118_VH00195_177_AAAJYJNHV']
+│ ℹ️ Start to processed flowcells_:   ['FLOWCELL']
 │ ℹ️ Sample number________________:   6
 │ ℹ️ Organism reference___________:   ['MM10']
 │ ℹ️ Type seq_____________________:   ['SC_TENX_RNA']
 │ ⚙️ Total resources allocated____:   120 cores, 1200 GB RAM
 │ ⚙️ Resources per sample_________:   20 cores, 200 GB RAM
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
-✅[Processing] Results already exist for 962210414501.
-✅[Processing] Results already exist for 962210514501.
-✅[Processing] Results already exist for 962210714501.
-✅[Processing] Results already exist for 962210814501.
-✅[Processing] Results already exist for 962211314501.
-✅[Processing] Results already exist for 962211514501.
-✅[Processing] ['241118_VH00195_177_AAAJYJNHV'] - processing complete!
+✅[Processing] Results already exist for SAMPLE.
+✅[Processing] Results already exist for SAMPLE.
+✅[Processing] Results already exist for SAMPLE.
+✅[Processing] Results already exist for SAMPLE.
+✅[Processing] Results already exist for SAMPLE.
+✅[Processing] Results already exist for SAMPLE.
+✅[Processing] ['FLOWCELL'] - processing complete!
 -----------------------------------------------------
 🕒[Check & move] Collecting statistics for SC_TENX_RNA...
-✅ Statistics summary saved to: 2.Results/10X/scRNA/241118_VH00195_177_AAAJYJNHV/241118_VH00195_177_AAAJYJNHV-sum/241118_VH00195_177_AAAJYJNHV_statistics_summary.csv
+✅ Statistics summary saved to: 2.Results/10X/scRNA/FLOWCELL/FLOWCELL-sum/FLOWCELL_statistics_summary.csv
 📊 Processed 6 samples successfully, 0 with errors
 📋 Total samples: 6
 ✅[Check & move] Move to sum dir SC_TENX_RNA: 6/6 reports
 ✅[Check & move] Move to sum dir SC_TENX_RNA: 0 plots
-✅[Check & move] Move SampleSheet to sum dir: 241118_VH00195_177_AAAJYJNHV-run_sheet.csv
-🕒 Creating archive 241118_VH00195_177_AAAJYJNHV_reports.zip...
-✅ Archive created: /mnt/raid0/ofateev/projects/SC_auto/2.Results/10X/scRNA/241118_VH00195_177_AAAJYJNHV/241118_VH00195_177_AAAJYJNHV-sum/241118_VH00195_177_AAAJYJNHV_reports.zip
+✅[Check & move] Move SampleSheet to sum dir: FLOWCELL-run_sheet.csv
+🕒 Creating archive FLOWCELL_reports.zip...
+✅ Archive created: 2.Results/10X/scRNA/FLOWCELL/FLOWCELL-sum/FLOWCELL_reports.zip
 🕒 Creating email body...
-🕒 Sending email to recipients: ['ofateev@cspfmba.ru', 'KDeynichenko@cspfmba.ru', 'AShaimardanov@cspfmba.ru']...
-❌ Error creating SOAP client: 401 Client Error: Unauthorized for url: https://mail2.cspfmba.ru:444/EWS/Services.wsdl
+🕒 Sending email to recipients: ...
 ⚠️ SOAP failed, trying SMTP...
 ✅ Email sent via SMTP (fallback)
-🕒[Check & move] Start move results to ceph: /mnt/cephfs8_rw/functional-genomics/10X_SC_RES/scRNA/cellranger-9.0.1
-✅[Check & move] Move to /mnt/cephfs8_rw/functional-genomics/10X_SC_RES/scRNA/cellranger-9.0.1 ready!
-❌[Check & move] Transfer 15602/15554 files. Not all files transferred.
+🕒[Check & move] Start move results to ceph: 10X_SC_RES/scRNA/cellranger-9.0.1
+✅[Check & move] Move to 10X_SC_RES/scRNA/cellranger-9.0.1 ready!
 ✅[Check & move] All FASTQ files and temporary files removed!
-Successfully processed flowcell: 241118_VH00195_177_AAAJYJNHV
+Successfully processed flowcell: FLOWCELL
 =====================================================
 ```
