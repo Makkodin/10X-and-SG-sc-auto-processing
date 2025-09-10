@@ -14,8 +14,6 @@
 
 1.  Клонирование GIT репозитория
 
-        git clone https://gitlab.cspfmba.ru/functionalgenomics/10x-and-sg-singlecell-pipeline.git
-
 2.  Установка окружения (Pipfile)
 
         cd 10x-and-sg-singlecell-pipeline
