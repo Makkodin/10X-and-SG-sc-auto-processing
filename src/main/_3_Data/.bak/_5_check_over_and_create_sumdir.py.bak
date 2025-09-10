@@ -1,0 +1,237 @@
+from main._1_PATHs.results import ResultsType
+from main._1_PATHs.tools import ToolsType
+from glob import glob
+import pandas as pd
+import os
+import shutil
+import time
+import subprocess
+
+
+def count_files_in_dir(root_dir: str) -> int:
+    """
+    Counts the total number of files in a directory and its subdirectories.
+
+    :param root_dir: Path to the root directory.
+    :return: Total number of files.
+    """
+    return sum(len(files) for _, _, files in os.walk(root_dir))
+
+
+def check_and_move_reports(
+    runsheet: pd.DataFrame,
+    runsheet_path: str,
+    flowcell: str,
+    fastq_res_folder: str,
+    password: str,
+    results=ResultsType,
+    toolpath=ToolsType,
+    work_run: str = '/mnt/raid0/ofateev/projects/SC_auto'
+):
+    """
+    Checks for generated reports, renames them, moves to a summary folder, 
+    and synchronizes data with remote storage (ceph). Deletes local files after successful transfer.
+
+    :param runsheet: DataFrame containing sample metadata including Sample_ID and SEQtype.
+    :param runsheet_path: Path to the original runsheet file.
+    :param flowcell: Flowcell identifier used in result directories.
+    :param fastq_res_folder: Path to FASTQ result folder to be removed after transfer.
+    :param password: Password for sudo/sshpass command.
+    :param results: Object containing result path parameters by sequencing type.
+    :param toolpath: Object mapping sequencing types to tool paths.
+    :param work_run: Base path where local results are stored. Default is '/mnt/raid0/ofateev/projects/SC_auto'.
+    """
+
+    # Initialize dataframe and columns
+    samples_parse_df                =   runsheet.copy()
+    samples_parse_df['Report_path'] =   "Error"
+    res_folder_local                =   None
+
+
+    # Loop through each sample to find report paths\
+    for i in range(len(samples_parse_df)):
+        _sample         =   samples_parse_df.iloc[i]['Sample_ID']
+        _seq_type       =   samples_parse_df.iloc[i]['SEQtype']
+
+        if pd.isna(_seq_type):
+            print(f"❌[Check & move] SEQtype is missing for Sample_ID: {_sample}")
+            return
+
+        try:
+            # Get report postfix based on sequencing type
+            _postfix_report     =   results[_seq_type]._get_params()['postfix']
+            _postfix_stats      =   results[_seq_type]._get_params()['stat']
+            
+        except KeyError:
+            print(f"❌[Check & move] Unknown SEQtype '{_seq_type}' for Sample_ID: {_sample}")
+            return
+
+        # Check for VDJ-type override
+        if 'VDJ_type' in samples_parse_df.columns:
+            _seq_type   =   'SC_SeekGene_VDJ'
+            samples_parse_df.loc[i, 'SEQtype']  =   f"SC_SeekGene_RNA|SC_SeekGene_VDJ"
+
+        # Build paths for local and remote storage
+        result_dir      =   f"{work_run}/{results[_seq_type]._get_params()['local']}"
+        ceph_res_dir    =   f"{results[_seq_type]._get_params()['ceph']}/{toolpath[_seq_type]._get_params()}"
+
+        if not os.path.exists(ceph_res_dir):
+            os.makedirs(ceph_res_dir)
+
+        # Search for report file
+        report_path =   glob(f'{result_dir}/{flowcell}/{_sample}*/*{_postfix_report}')
+        stat_path   =   glob(f'{result_dir}/{flowcell}/{_sample}*/*{_postfix_stats}')
+
+        if report_path:
+            samples_parse_df.loc[i, 'Report_path']  =   report_path[0]
+            samples_parse_df.loc[i, 'Stat_path']    =   stat_path[0]
+            samples_parse_df.loc[i, 'Local_path']   =   result_dir
+            samples_parse_df.loc[i, 'Ceph_path']    =   ceph_res_dir
+    samples_parse_df.to_csv(runsheet_path, 
+                            index       =   False)
+
+    # Check for missing reports
+    if "Error" in samples_parse_df['Report_path'].to_list():
+        df_error    =   samples_parse_df[samples_parse_df['Report_path'] == 'Error']
+        print(f'❌[Check & move] Not completed report.html for : {df_error["Sample_ID"].to_list()}')
+        return False
+
+    # Create summary folder and copy renamed reports
+    set_seq_type    =   samples_parse_df['SEQtype'].drop_duplicates().to_list()
+    for seq_type in set_seq_type:
+        seq_type_res =  samples_parse_df[samples_parse_df['SEQtype'] == seq_type]
+        result_dir = seq_type_res.iloc[0]['Local_path']
+
+        sum_path = f"{result_dir}/{flowcell}/{flowcell}-sum"
+        os.makedirs(sum_path, exist_ok=True)
+
+        if seq_type == 'SC_SeekGene_FullRNA':
+            if os.path.exists(f'{fastq_res_folder}/bak_multilines'):
+                shutil.copytree(f'{fastq_res_folder}/bak_multilines', 
+                                f'{sum_path}/bak_multilines', 
+                                dirs_exist_ok=True)
+            time.sleep(5)
+            if os.path.exists(f'{fastq_res_folder}/bak_before_fastp'):
+                shutil.copytree(f'{fastq_res_folder}/bak_before_fastp', 
+                                f'{sum_path}/bak_before_fastp', 
+                                dirs_exist_ok=True)
+            time.sleep(5)
+            if os.path.exists(f'{fastq_res_folder}/bak_before_repair'):
+                shutil.copytree(f'{fastq_res_folder}/bak_before_repair', 
+                                f'{sum_path}/bak_before_repair', 
+                                dirs_exist_ok=True)
+            time.sleep(5)
+            reports_fastp = glob(f"{fastq_res_folder}/fastp_-l*")
+            if len(reports_fastp) != 0:
+                for report_fastp in reports_fastp:
+                    name_report_fastp = report_fastp.split('/')[-1]
+                    shutil.copyfile(f'{fastq_res_folder}/{name_report_fastp}', 
+                                    f'{sum_path}/{name_report_fastp}')
+                    time.sleep(5)
+            log_fastp = glob(f"{fastq_res_folder}/*.log")
+            if len(log_fastp) != 0:
+                for lg in log_fastp:
+                    name_report_lg = lg.split('/')[-1]
+                    shutil.copyfile(f'{fastq_res_folder}/{name_report_lg}', 
+                                    f'{sum_path}/{name_report_lg}')
+                    time.sleep(5)
+            os.makedirs(f"{sum_path}/after_fastp", exist_ok=True)
+            fastqs_fastp = glob(f"{fastq_res_folder}/*_filtered.fastq.gz")
+            if len(fastqs_fastp) != 0:
+                for fastq_fastp in fastqs_fastp:
+                    name_fastq_fastp = fastq_fastp.split('/')[-1]
+                    shutil.copyfile(f'{fastq_fastp}', 
+                                    f'{sum_path}/after_fastp/{name_fastq_fastp}')
+                    time.sleep(5)
+            
+        for i in range(len(seq_type_res)):
+            _sample         =   seq_type_res.iloc[i]['Sample_ID']
+            _report_path    =   seq_type_res.iloc[i]['Report_path']
+            _stat_path      =   seq_type_res.iloc[i]['Stat_path']
+
+            plot_annotation =   glob(_report_path.rsplit('/', maxsplit=1)[0] + '/*png') + \
+                                    glob(_report_path.rsplit('/', maxsplit=1)[0] + '/step3/filtered_feature_bc_matrix/*png')
+            if len(plot_annotation) != 0:
+                path_to_plot    =   plot_annotation[0].rsplit('/', maxsplit=1)[0]
+                newpath_to_plot =   f'{_sample}_annotation.png'
+                new_path_plot   =   f"{sum_path}/{newpath_to_plot}"
+                shutil.copyfile(plot_annotation[0], new_path_plot)
+
+
+            # Rename report file
+            path_to_report      =   _report_path.rsplit('/', maxsplit=1)[0]
+            newpath_to_report   =   f'{_sample}-report.html'
+            new_path = f"{sum_path}/{newpath_to_report}"
+            shutil.copyfile(_report_path, new_path)
+
+
+
+
+        print(f"🕒[Check & move] Move to sum dir {seq_type}: {len(glob(f'{sum_path}/*html'))}/{len(seq_type_res)} reports")
+        print(f"🕒[Check & move] Move to sum dir {seq_type}: {len(glob(f'{sum_path}/*png'))}/{len(seq_type_res)} plots")
+        # Save run sheet locally
+        res_folder_local = f"{result_dir}/{flowcell}"
+        shutil.copyfile(runsheet_path, f"{res_folder_local}/{runsheet_path.split('/')[-1]}")
+        print(f"🕒[Check & move] Move SampleSheet to sum dir: {runsheet_path.split('/')[-1]}")
+        # Sync with remote storage (ceph)
+        set_res_ceph = list(set(seq_type_res['Ceph_path'].to_list()))
+
+        if len(set_res_ceph) == 1:
+            ceph_res_dir = set_res_ceph[0]
+            load_com = [
+                'sshpass', '-p', password,
+                'sudo', 'rsync', '-r',
+                '--no-links', '--checksum', '--progress',
+                res_folder_local,
+                f'{ceph_res_dir}/'
+            ]
+        else:
+            print('❌[Check & move] Error in ceph_res_path:', set_res_ceph)
+            return
+
+        # Execute rsync command
+        try:
+            print(f"🕒[Check & move] Start move results to ceph:\n{set_res_ceph}")
+            subprocess.run(load_com, 
+                           check=True, 
+                           stdout=subprocess.PIPE, 
+                           stderr=subprocess.DEVNULL, 
+                           text=True)
+            time.sleep(30)
+            print(f"✅[Check & move] Move to {ceph_res_dir} ready!")
+        except subprocess.CalledProcessError as e:
+            print("❌[Check & move] Move error:")
+            print(f"Code: {e}")
+            return
+
+        # Count files before deletion
+        local_count = count_files_in_dir(res_folder_local)
+        remote_count = count_files_in_dir(f"{ceph_res_dir}/{flowcell}")
+
+        # Remove local files if counts match
+        remove_com = ['sshpass', '-p', password, 'sudo', 'rm', '-r', res_folder_local]
+
+        if local_count == remote_count:
+            print(f"✅[Check & move] Transfer {local_count}/{remote_count} files.")
+            subprocess.run(remove_com, 
+                           check=True, 
+                           stdout=subprocess.PIPE, 
+                           stderr=subprocess.DEVNULL, 
+                           text=True)
+            time.sleep(10)
+            print("✅[Check & move] All local files removed!")
+        else:
+            print(f"❌[Check & move] Transfer {local_count}/{remote_count} files. Not all files were transferred.")
+            subprocess.run(remove_com, 
+                           check=True, 
+                           stdout=subprocess.PIPE, 
+                           stderr=subprocess.DEVNULL, 
+                           text=True)
+            time.sleep(10)
+    remove_com = ['sshpass', '-p', password, 'sudo', 'rm', '-r', fastq_res_folder,runsheet_path]
+    subprocess.run(remove_com, 
+                           check=True, 
+                           stdout=subprocess.PIPE, 
+                           stderr=subprocess.DEVNULL, 
+                           text=True)
+    print("✅[Check & move] All FASTQ files removed!")
