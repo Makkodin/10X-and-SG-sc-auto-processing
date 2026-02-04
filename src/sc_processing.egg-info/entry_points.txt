@@ -1,2 +1,0 @@
-[console_scripts]
-sc-processing = main.run:main
